@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>シャサフ式高次元音程→平均律近似</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <h1>シャサフ式高次元音程→平均律近似</h1>
+
+    <!-- 1. 上部設定エリア -->
+    <div class="base-scale">
+        <div class="teto-input base-scale-row">
+            <label for="base-edo">音階:</label>
+            <input type="text" id="base-edo" class="short-input" value="48"
+                   inputmode="numeric" pattern="[0-9]*"
+                   title="有効な形式: 整数（1以上）">
+            <span>平均律、</span>
+
+            <label for="base-pitch">基準音(=A):</label>
+            <input type="number" id="base-pitch" class="short-input" value="440.0" step="0.1"
+                   title="有効な形式: 正の数（例: 440.0）">
+            <span>Hz、</span>
+
+            <label for="base-scale-tonic">主音:</label>
+            <input type="text" id="base-scale-tonic" class="short-input" value="A"
+                   title="有効な形式: 音名（例: A, C#, Bb, Cis）">
+            <span id="base-scale-tonic-pitch">(=440.00Hz)</span>
+
+            <span>（主音を1次元上昇・下降→）</span>
+            <img src="1d-symbol.png" alt="1次元記号" class="dim-icon" id="dim-icon-1d">
+            <button type="button" id="base-1d-up">↑</button>
+            <button type="button" id="base-1d-down">↓</button>
+        </div>
+
+        <div class="base-note-input base-scale-row">
+            <label for="base-note">根音:</label>
+            <input type="text" id="base-note" class="short-input" value="A"
+                   title="有効な形式: 音名（例: A, C#, Bb, Cis）">
+            <span>+</span>
+
+            <span class="sup-input-wrapper">
+                <span id="for-offset-n-edo" class="sup-label">48</span>
+                <input type="text" id="base-note-offset" class="short-input" value="0"
+                       inputmode="numeric" pattern="-?[0-9]*"
+                       title="有効な形式: 整数">
+            </span>
+            <span>'（ステップ）</span>
+
+            <div class="option-input-row">
+                <input type="checkbox" id="show-note-with-step" checked>
+                <label for="show-note-with-step">音名+ステップ数で表示(12*n平均律のみ)</label>
+
+                <div class="setting-group">
+                    <label for="notation-mode">優先する音名表記:</label>
+                    <select id="notation-mode" class="setting-select">
+                        <option value="english" selected class="select-text">英米式</option>
+                        <option value="german" class="select-text">ドイツ式</option>
+                    </select>
+                </div>
+
+                <button type="button" id="btn-reset-scale" class="action-btn">初期値に戻す</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. ヘルプセクション -->
+    <details class="help-section">
+        <summary>使い方(ここをクリック)</summary>
+        <div class="help-content">
+            <ul>
+                <li><b>基本設定:</b> 基準となる平均律（EDO）と主音（Tonic）、根音を設定します。</li>
+                <li>音名の表記方法は「日本語」「英語」「ドイツ語」に対応しています。同一表記のものは、選択した表記方法に従って表示されます。（Bなど）</li>
+                <li><b>音程の入力:</b> 各次元の「↑」「↓」を押すと、次元に応じた純正比（3/2, 5/4…）が掛け合わされます。</li>
+                <li> 「音名+ステップ数で表示」をONにしている場合、音名とステップ数の組み合わせで音程が表示されます。（12*n　平均律のみ）</li>
+                <li><b>音の試聴:</b> 「試聴」ボタンを押すと、計算された和音・音程を実際の音で確認できます。（音量、音高に注意：正弦波で再生されます。）</li>
+            </ul>
+        </div>
+    </details>
+
+    <!-- 3. アクションバー -->
+    <div class="action-bar">
+        <button type="button" id="btn-reset-interval" class="action-btn">音程リセット</button>
+    </div>
+
+    <!-- 4. 次元入力エリア -->
+    <div class="interval-input">
+        <div class="interval-input-card">
+            <div class="card-row"><span>1次元 <img src="1d-symbol.png" alt="1次元記号" class="dim-icon" id="dim-icon-1d-card"> (×2/1)</span></div>
+            <div class="card-row">
+                <button type="button" id="1d-up">↑</button>
+                <button type="button" id="1d-down">↓</button>
+            </div>
+            <div class="card-row" id="1d-current-interval"><p>-</p></div>
+        </div>
+
+        <div class="interval-input-card">
+            <div class="card-row"><span>2次元 <img src="2d-symbol.png" alt="2次元記号" class="dim-icon" id="dim-icon-2d-card"> (×3/2)</span></div>
+            <div class="card-row">
+                <button type="button" id="2d-up">↑</button>
+                <button type="button" id="2d-down">↓</button>
+            </div>
+            <div class="card-row" id="2d-current-interval"><p>-</p></div>
+        </div>
+
+        <div class="interval-input-card">
+            <div class="card-row"><span>3次元 <img src="3d-symbol.png" alt="3次元記号" class="dim-icon" id="dim-icon-3d-card"> (×5/4)</span></div>
+            <div class="card-row">
+                <button type="button" id="3d-up">↑</button>
+                <button type="button" id="3d-down">↓</button>
+            </div>
+            <div class="card-row" id="3d-current-interval"><p>-</p></div>
+        </div>
+
+        <div class="interval-input-card">
+            <div class="card-row"><span>4次元 <img src="4d-symbol.png" alt="4次元記号" class="dim-icon" id="dim-icon-4d-card"> (×7/4)</span></div>
+            <div class="card-row">
+                <button type="button" id="4d-up">↑</button>
+                <button type="button" id="4d-down">↓</button>
+            </div>
+            <div class="card-row" id="4d-current-interval"><p>-</p></div>
+        </div>
+
+        <div class="interval-input-card">
+            <div class="card-row"><span>5次元 <img src="5d-symbol.png" alt="5次元記号" class="dim-icon" id="dim-icon-5d-card"> (×11/4)</span></div>
+            <div class="card-row">
+                <button type="button" id="5d-up">↑</button>
+                <button type="button" id="5d-down">↓</button>
+            </div>
+            <div class="card-row" id="5d-current-interval"><p>-</p></div>
+        </div>
+
+        <div class="interval-input-card">
+            <div class="card-row"><span>6次元 <img src="6d-symbol.png" alt="6次元記号" class="dim-icon" id="dim-icon-6d-card"> (×13/4)</span></div>
+            <div class="card-row">
+                <button type="button" id="6d-up">↑</button>
+                <button type="button" id="6d-down">↓</button>
+            </div>
+            <div class="card-row" id="6d-current-interval"><p>-</p></div>
+        </div>
+    </div>
+
+    <!-- 5. 結果表示エリア -->
+    <div class="result-container">
+        <div class="result-header">
+            <div id="result-base-scale">結果(A=440.00Hz,48edo)</div>
+            <div class="result-header-spacer"></div>
+            <div class="result-header-btn-area">
+                <button type="button" id="btn-play-audio" class="action-btn play-btn">試聴</button>
+            </div>
+        </div>
+
+        <div class="result">
+            <div id="result-base-note" class="result-card">
+                <div id="result-base-note-input">A</div> 
+                <div id="result-base-note-output">A(440.00Hz)</div>
+            </div>
+            <div class="result-arrow">⇒</div>
+            <div id="result-interval" class="result-card">
+                <div id="result-interval-input">-</div> 
+                <div id="result-interval-mult">(×1)</div> 
+                <div id="result-interval-output">A(440.00Hz)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- フッター -->
+    <footer class="credit-footer">
+        <div class="credit-link-row">
+            <span>理論・原案・デザイン：</span>
+            <a href="https://x.com/lamplight_music" target="_blank" rel="noopener noreferrer" class="credit-link">
+                <img src="lamplight_icon.png" alt="@lamplight_music icon" class="credit-icon">
+                <span>@L4MPLIGHT</span>
+            </a>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

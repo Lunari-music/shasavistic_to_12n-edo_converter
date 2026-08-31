@@ -1,0 +1,485 @@
+/* ==========================================
+ 0. カラー変数定義（ライト / ダーク）
+ ========================================== */
+:root {
+  --color-bg: #FBFAF8;
+  --color-text: #333333;
+  --color-muted: #555555;
+  --color-border: #B5AFA5;
+  --color-card-bg: #ffffff;
+  --color-input-bg: #ffffff;
+  --color-hover-bg: #f1f5f9;
+  --color-hover-border: #64748b;
+  --color-link: #0f1419;
+  --color-error: #d9534f;
+  --color-error-bg: #fff5f5;
+  --color-shadow: rgba(0, 0, 0, 0.05);
+
+  /* セレクトボックスの矢印色（SVGデータURI用にURLエンコード済み） */
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0L5 6L10 0Z' fill='%23333333'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1e1e1c;
+    --color-text: #e8e6e1;
+    --color-muted: #b5b0a8;
+    --color-border: #5a5449;
+    --color-card-bg: #272a2a;
+    --color-input-bg: #2a2a27;
+    --color-hover-bg: #3a3a36;
+    --color-hover-border: #8a8478;
+    --color-link: #f0eee9;
+    --color-error: #ef8a85;
+    --color-error-bg: #3a2323;
+    --color-shadow: rgba(0, 0, 0, 0.4);
+
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0L5 6L10 0Z' fill='%23e8e6e1'/%3E%3C/svg%3E");
+  }
+}
+
+/* ==========================================
+ 1. 基本レイアウト & 共通設定
+ ========================================== */
+body {
+  font-family: sans-serif;
+  margin: 0 auto;
+  padding: 40px;
+  background-color: var(--color-bg);
+  max-width: 1400px;
+  color: var(--color-text);
+  margin-top: -20px;
+}
+
+h1 {
+  color: var(--color-text);
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+/* 共通インライン・フォーム要素の統一 */
+input[type="text"],
+input[type="number"],
+select,
+button {
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-input-bg);
+  color: var(--color-text);
+  box-sizing: border-box;
+  vertical-align: middle;
+  line-height: 1.2;
+}
+
+input[type="checkbox"] {
+  vertical-align: middle;
+  margin: 0 4px 0 0;
+}
+
+label, span {
+  font-size: 1em;
+  vertical-align: middle;
+  line-height: 1.2;
+}
+
+.short-input {
+  width: 80px;
+}
+
+.base-scale-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center; /* 行内の全要素を縦中央揃え */
+  gap: 8px;
+  width: 100%;
+}
+
+/* フォーム要素の上下揃えと高さを厳密に共通化 */
+.base-scale-row input[type="text"],
+.base-scale-row input[type="number"],
+.base-scale-row select,
+.base-scale-row button,
+.base-scale-row label,
+.base-scale-row span {
+  vertical-align: middle;
+  margin: 0;
+}
+
+/* セレクトボックスの高さを他インライン要素（ボタン・入力枠）と揃える */
+.setting-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 4px 26px 4px 8px; /* 右側に矢印分の余白を確保 */
+  font-size: 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-input-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  box-sizing: border-box;
+  height: 31px;
+  line-height: 21px; /* height - border(2px) - padding上下(8px) と一致させる */
+
+  /* 自前の矢印アイコン（右側中央に配置） */
+  background-image: var(--select-arrow);
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 6px;
+}
+
+.setting-select:hover {
+  border-color: var(--color-hover-border);
+}
+
+/* ==========================================
+ 1.5 入力バリデーション（エラー表示）
+ ========================================== */
+input.input-error {
+  border-color: var(--color-error) !important;
+  background-color: var(--color-error-bg);
+}
+
+/* ==========================================
+ 2. ボタン & アクションバー
+ ========================================== */
+.action-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.card-header-btn {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.action-btn {
+  background-color: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 4px 12px;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+  align-self: center;
+}
+
+.action-btn:hover {
+  background-color: var(--color-hover-bg);
+  border-color: var(--color-hover-border);
+}
+
+.play-btn {
+  background-color: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+.action-bar .action-btn {
+  margin-bottom: 0; /* 下マージンの消し忘れによるズレを防止 */
+}
+
+/* ==========================================
+ 3. 上部設定エリア (.base-scale)
+ ========================================== */
+.base-scale {
+  background-color: var(--color-card-bg);
+  border: 2px solid var(--color-border);
+  border-radius: 4px;
+  padding: 20px;
+  box-shadow: 0 1px 3px var(--color-shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.base-scale-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.option-input-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.setting-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.select-text {
+ align-self: center;
+}
+
+/* 上付き数値入力（EDO） */
+.sup-input-wrapper {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  margin: 0 2px;
+}
+
+.sup-label {
+  font-size: 0.7em;
+  line-height: 1;
+  color: var(--color-muted);
+  position: absolute;
+  top: -0.6em;
+  left: -1.2em;
+}
+
+.option-input-row .action-btn,
+#btn-reset-scale {
+  margin: 0;
+  align-self: center;
+}
+
+
+/* ==========================================
+ 4. 次元入力エリア (.interval-input)
+ ========================================== */
+.interval-input {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 12px;
+  padding: 0 2px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.interval-input-card {
+  background-color: var(--color-card-bg);
+  color: var(--color-text);
+  border: 2px solid var(--color-border);
+  border-radius: 4px;
+  padding: 16px; 
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px var(--color-shadow);
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.interval-input-card button,
+#base-1d-up,
+#base-1d-down {
+  padding: 4px 10px;
+  margin: 0 2px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-input-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.card-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.interval-input-card .card-row p {
+  margin: 0;
+  min-height: 2em; 
+  line-height: 1.5;
+  font-size: 1rem;
+  text-align: center;
+}
+
+/* レスポンシブ設定 */
+@media (min-width: 480px) {
+  .interval-input {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 768px) {
+  .interval-input {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (min-width: 1125px) {
+  .interval-input {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+
+/* ==========================================
+ 5. 結果表示エリア (.result-container)
+ ========================================== */
+.result-container {
+  margin-top: 24px;
+  width: 100%;
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+#result-base-scale {
+  flex: 1;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.result-header-spacer {
+  width: 24px;
+}
+
+.result-header-btn-area {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.result-header-btn-area .action-btn {
+  margin-bottom: 0;
+}
+
+.result {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.result-card {
+  flex: 1; 
+  background-color: var(--color-card-bg); 
+  border: 2px solid var(--color-border); 
+  color: var(--color-text);   
+  border-radius: 4px;    
+  padding: 24px 16px;  
+  box-shadow: 0 1px 3px var(--color-shadow);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;  
+  align-items: center;   
+  justify-content: center; 
+  text-align: center;
+  min-height: 140px; 
+}
+
+.result-card p,
+.result-card div {
+  min-height: 1.6em;
+  line-height: 1.5;
+}
+
+.result-arrow {
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+  width: 24px;
+}
+
+/* ==========================================
+ 6. フッター & アイコン・画像表示設定
+ ========================================== */
+.credit-footer {
+  margin-top: 36px;
+  padding-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--color-border);
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.credit-link-row,
+.credit-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-link);
+  text-decoration: none;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.credit-link:hover {
+  text-decoration: underline;
+}
+
+.credit-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+/* 各次元の記号画像 */
+.dim-icon {
+  height: 1.1em;
+  width: auto;
+  vertical-align: middle;
+  object-fit: contain;
+}
+
+#dim-icon-1d { height: 1.0em; }
+#dim-icon-2d { height: 0.7em; }
+#dim-icon-1d-card { height: 1.0em; }
+#dim-icon-2d-card { height: 0.7em; }
+
+/* 上付き文字（sup）の共通定義 */
+sup {
+  vertical-align: super !important;
+  font-size: 0.8em;
+}
+
+/* 矢印アイコン共通スタイル */
+.arrow-dim-icon {
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: middle;
+  display: inline-block;
+  object-fit: contain;
+  background-color: transparent !important;
+  background: none !important;
+}
+
+/* 各次元ごとのカラーフィルター（SVG/画像用） */
+.dim-color-1 { filter: brightness(0) saturate(100%) invert(76%) sepia(0%) saturate(1154%) hue-rotate(183deg) brightness(93%) contrast(81%); }
+.dim-color-2 { filter: brightness(0) saturate(100%) invert(62%) sepia(29%) saturate(2278%) hue-rotate(307deg) brightness(107%) contrast(90%); }
+.dim-color-3 { filter: brightness(0) saturate(100%) invert(84%) sepia(30%) saturate(690%) hue-rotate(72deg) brightness(88%) contrast(92%); }
+.dim-color-4 { filter: brightness(0) saturate(100%) invert(64%) sepia(64%) saturate(762%) hue-rotate(206deg) brightness(99%) contrast(88%); }
+.dim-color-5 { filter: brightness(0) saturate(100%) invert(70%) sepia(55%) saturate(479%) hue-rotate(357deg) brightness(102%) contrast(101%); }
+.dim-color-6 { filter: brightness(0) saturate(100%) invert(61%) sepia(86%) saturate(2472%) hue-rotate(27deg) brightness(104%) contrast(104%); }
