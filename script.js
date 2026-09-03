@@ -6,9 +6,14 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- 入力・設定関連 ---
 const input_n_edo = document.getElementById('base-edo');
 const input_base_pitch = document.getElementById('base-pitch');
+// 基準音（=440Hz等で指定する音名・ステップオフセット）
+const input_base_pitch_note = document.getElementById('base-pitch-is');
+const input_base_pitch_offset = document.getElementById('base-pitch-offset');
 const input_base_note = document.getElementById('base-note');
 const input_base_note_offset = document.getElementById('base-note-offset');
 const input_base_tonic = document.getElementById('base-scale-tonic');
+// 主音のステップオフセット（新規追加分）
+const input_base_tonic_offset = document.getElementById('base-note-tonic-offset');
 const chk_show_note_with_step = document.getElementById('show-note-with-step');
 const select_notation_mode = document.getElementById('notation-mode');
 const play_note_interval = document.getElementById('btn-play-audio');
@@ -21,7 +26,9 @@ const btn_base_1d_down = document.getElementById('base-1d-down');
 const cards = document.querySelectorAll('.interval-input-card');
 
 // --- 表示領域関連 ---
-const display_for_offset_n_edo = document.getElementById('for-offset-n-edo');
+// 注意: id="for-offset-n-edo" が (基準音/主音/根音の各オフセット欄で) HTML内に複数存在するため、
+// getElementById ではなく querySelectorAll で全件取得し、まとめて更新する。
+const display_offset_n_edo_labels = document.querySelectorAll('[id="for-offset-n-edo"]');
 const display_tonic_pitch = document.getElementById('base-scale-tonic-pitch');
 const display_for_result_scale = document.getElementById('result-base-scale');
 const display_for_result_base_note = document.getElementById('result-base-note-input');
@@ -46,9 +53,12 @@ let base_octave_shift_count = 0;
 const inputElements = [
   input_n_edo,
   input_base_pitch,
+  input_base_pitch_note,
+  input_base_pitch_offset,
   input_base_note,
   input_base_note_offset,
   input_base_tonic,
+  input_base_tonic_offset,
   chk_show_note_with_step,
   select_notation_mode
 ];
@@ -190,14 +200,14 @@ if (btn_base_1d_down) {
  */
 function update_all() {
   validate_inputs();
-  update_input();
+  const tonic_pitch = update_input();
   
   // 分数テキストの更新
   output_result_interval_mult.textContent = calc_all_mult_text(intervalCounts);
   
   // 数値倍率の計算と周波数出力
   const mult_val = calc_all_mult_value(intervalCounts);
-  calc_result(mult_val);
+  calc_result(mult_val, tonic_pitch);
 
   // 現在の設定を保存
   save_settings_to_storage();
@@ -208,15 +218,25 @@ function update_all() {
  * @returns {number} シフト調整後の主音周波数
  */
 function update_input() {
-  const raw_pitch = parseFloat(input_base_pitch.value) || 440;
+  const entered_pitch = parseFloat(input_base_pitch.value) || 440;
   base_note_str = input_base_note.value.trim();
   base_note_offset = parseInt(input_base_note_offset.value, 10) || 0;
   n_edo = parseInt(input_n_edo.value, 10) || 48;
 
-  // 1. 主音（Tonic）の周波数をシフトカウント（×2^n）を反映して計算
+  // 0. 「基準音（音名＋ステップオフセット）＝入力Hz」から、内部基準であるAの周波数を逆算する
+  //    （以前は基準音＝A固定だったが、任意の音名＋ステップで指定できるよう一般化）
+  const pitch_note_str = input_base_pitch_note.value.trim();
+  const pitch_note_offset = parseInt(input_base_pitch_offset.value, 10) || 0;
+  const { step: pitch_note_step } = parse_note_info(pitch_note_str);
+  const pitch_total_offset = pitch_note_step + (pitch_note_offset * (12 / n_edo));
+  const raw_pitch = entered_pitch / Math.pow(2, pitch_total_offset / 12);
+
+  // 1. 主音（Tonic）の周波数を、音名＋ステップオフセット、シフトカウント（×2^n）を反映して計算
   const tonic_str = input_base_tonic.value.trim();
+  const tonic_offset = parseInt(input_base_tonic_offset.value, 10) || 0;
   const { step: tonic_step } = parse_note_info(tonic_str);
-  const base_tonic_pitch = raw_pitch * Math.pow(2, tonic_step / 12);
+  const tonic_total_offset = tonic_step + (tonic_offset * (12 / n_edo));
+  const base_tonic_pitch = raw_pitch * Math.pow(2, tonic_total_offset / 12);
   const shifted_tonic_pitch = base_tonic_pitch * Math.pow(2, base_octave_shift_count);
 
   // 2. 基音の周波数が (主音/(4/3), 主音*(3/2)) の範囲に入るよう 2^n 倍で調整
@@ -237,22 +257,23 @@ function update_input() {
     }
   }
   base_pitch = adjusted_pitch;
+  const tonic_reference_pitch = shifted_tonic_pitch * (adjusted_pitch / raw_pitch);
 
-  display_for_offset_n_edo.textContent = n_edo;
+  display_offset_n_edo_labels.forEach(label => { label.textContent = n_edo; });
   display_for_result_scale.textContent = `結果(A=${base_pitch.toFixed(2)}Hz,${n_edo}edo)`;
   
   // 主音表示の更新
-  display_tonic_pitch.textContent = `(=${shifted_tonic_pitch.toFixed(2)}Hz)`;
+  display_tonic_pitch.textContent = `(=${tonic_reference_pitch.toFixed(2)}Hz)`;
 
-  return shifted_tonic_pitch;
+  return tonic_reference_pitch;
 }
 
 /**
  * 高次元音程倍率をもとに目標周波数を計算し、結果画面を出力・更新します。
  * @param {number} mult - 計算された合成倍率（数値）
+ * @param {number} tonic_pitch - オクターブ調整後の主音周波数
  */
-function calc_result(mult) {
-  const tonic_pitch = base_pitch;
+function calc_result(mult, tonic_pitch) {
 
   // 1. 基音の解析
   const { step: base_step } = parse_note_info(base_note_str);
@@ -263,12 +284,7 @@ function calc_result(mult) {
   const target_pitch = actual_base_pitch * mult;
 
   // 3. 基音のオフセット文字列を作成
-  let offset_text = "";
-  if (base_note_offset !== 0) {
-    const sign = base_note_offset > 0 ? "+" : "";
-    offset_text = ` ${sign} <sup>${n_edo}</sup>${base_note_offset}'`;
-  }
-
+  const base_note_offset_text = format_step_offset(base_note_offset);
   // 4. 音名・近似値計算（選択された表記言語を優先適用）
   const activeLang = get_selected_lang_index();
   const base_note_cents_info = get_closest_note_and_cents(actual_base_pitch, activeLang);
@@ -276,7 +292,7 @@ function calc_result(mult) {
   const nedo_info = calc_nedo_step_and_cents(target_pitch, tonic_pitch, n_edo, activeLang);
 
   // 5. 画面表示の更新
-  display_for_result_base_note.innerHTML = `${base_note_str}${offset_text}`;
+  display_for_result_base_note.innerHTML = `${base_note_str}${base_note_offset_text}`;
   output_result_base_note.textContent = `${base_note_cents_info} (${actual_base_pitch.toFixed(2)}Hz)`;
   
   const raw_symbol_text = get_current_interval_symbol();
@@ -294,10 +310,13 @@ function calc_result(mult) {
  */
 function reset_base_scale_settings() {
   input_n_edo.value = 48;
+  input_base_pitch_note.value = "A";
+  input_base_pitch_offset.value = 0;
   input_base_pitch.value = 440;
   input_base_note.value = "A";
   input_base_note_offset.value = 0;
   input_base_tonic.value = "A";
+  input_base_tonic_offset.value = 0;
   
   // ★ 12平均律の時に音名+ステップ表示: ON (true) に変更
   chk_show_note_with_step.checked = true;
@@ -329,6 +348,18 @@ function reset_interval_counts() {
   });
 
   update_all();
+}
+
+
+/**
+ * n-EDOステップオフセットを結果表示用のHTMLに変換します。
+ * @param {number} offset - ステップオフセット
+ * @returns {string} superscript付きのオフセット文字列
+ */
+function format_step_offset(offset) {
+  if (offset === 0) return "";
+  const sign = offset > 0 ? "+" : "-";
+  return ` ${sign} <sup>${n_edo}</sup>${Math.abs(offset)}'`;
 }
 
 
@@ -380,6 +411,17 @@ function validate_inputs() {
   input_base_pitch.classList.toggle('input-error', !pitch_ok);
   all_valid = all_valid && pitch_ok;
 
+  // 基準音の音名：有効な音名
+  const pitch_note_ok = is_valid_note_name(input_base_pitch_note.value.trim());
+  input_base_pitch_note.classList.toggle('input-error', !pitch_note_ok);
+  all_valid = all_valid && pitch_note_ok;
+
+  // 基準音のステップオフセット：整数（先頭ゼロ許容、符号つきOK）
+  const pitch_offset_raw = input_base_pitch_offset.value.trim();
+  const pitch_offset_ok = is_valid_integer_string(pitch_offset_raw, true);
+  input_base_pitch_offset.classList.toggle('input-error', !pitch_offset_ok);
+  all_valid = all_valid && pitch_offset_ok;
+
   // 根音：有効な音名
   const note_ok = is_valid_note_name(input_base_note.value.trim());
   input_base_note.classList.toggle('input-error', !note_ok);
@@ -389,6 +431,12 @@ function validate_inputs() {
   const tonic_ok = is_valid_note_name(input_base_tonic.value.trim());
   input_base_tonic.classList.toggle('input-error', !tonic_ok);
   all_valid = all_valid && tonic_ok;
+
+  // 主音のステップオフセット：整数（先頭ゼロ許容、符号つきOK）
+  const tonic_offset_raw = input_base_tonic_offset.value.trim();
+  const tonic_offset_ok = is_valid_integer_string(tonic_offset_raw, true);
+  input_base_tonic_offset.classList.toggle('input-error', !tonic_offset_ok);
+  all_valid = all_valid && tonic_offset_ok;
 
   // 根音オフセット：整数（先頭ゼロ許容、符号つきOK）
   const offset_raw = input_base_note_offset.value.trim();
@@ -412,9 +460,12 @@ function save_settings_to_storage() {
     const data = {
       n_edo: input_n_edo.value,
       base_pitch: input_base_pitch.value,
+      base_pitch_note: input_base_pitch_note.value,
+      base_pitch_offset: input_base_pitch_offset.value,
       base_note: input_base_note.value,
       base_note_offset: input_base_note_offset.value,
       base_tonic: input_base_tonic.value,
+      base_tonic_offset: input_base_tonic_offset.value,
       show_note_with_step: chk_show_note_with_step.checked,
       notation_mode: select_notation_mode ? select_notation_mode.value : undefined,
       base_octave_shift_count: base_octave_shift_count,
@@ -439,9 +490,12 @@ function load_settings_from_storage() {
 
     if (data.n_edo !== undefined) input_n_edo.value = data.n_edo;
     if (data.base_pitch !== undefined) input_base_pitch.value = data.base_pitch;
+    if (data.base_pitch_note !== undefined) input_base_pitch_note.value = data.base_pitch_note;
+    if (data.base_pitch_offset !== undefined) input_base_pitch_offset.value = data.base_pitch_offset;
     if (data.base_note !== undefined) input_base_note.value = data.base_note;
     if (data.base_note_offset !== undefined) input_base_note_offset.value = data.base_note_offset;
     if (data.base_tonic !== undefined) input_base_tonic.value = data.base_tonic;
+    if (data.base_tonic_offset !== undefined) input_base_tonic_offset.value = data.base_tonic_offset;
     if (data.show_note_with_step !== undefined) chk_show_note_with_step.checked = !!data.show_note_with_step;
     if (data.notation_mode !== undefined && select_notation_mode) select_notation_mode.value = data.notation_mode;
     if (typeof data.base_octave_shift_count === 'number') base_octave_shift_count = data.base_octave_shift_count;
@@ -581,20 +635,35 @@ function calc_nedo_step_and_cents(target_pitch, tonic_pitch, n_edo, langIndex) {
 
   if (use_note_format) {
     const steps_per_semitone = n_edo / 12;
-    const { step: tonic_step_12 } = parse_note_info(input_base_tonic.value.trim());
+    // 音名+ステップ表記の音名は、主音ではなくA=440Hzを基準にする。
+    // 主音のオフセットを基準にすると、主音A+4'で440HzがG#になる。
+    const absolute_steps = n_edo * Math.log2(target_pitch / 440);
+    const absolute_step = Math.round(absolute_steps);
+    let semitones_from_a = Math.round(absolute_step / steps_per_semitone);
+    let sub_step = absolute_step - (semitones_from_a * steps_per_semitone);
+    if (sub_step < 0) {
+      semitones_from_a--;
+      sub_step += steps_per_semitone;
+    }
+    const absolute_cents_offset = Math.round(
+      (absolute_steps - absolute_step) * (1200 / n_edo)
+    );
+    let absolute_cents_str = "";
+    if (absolute_cents_offset > 0) {
+      absolute_cents_str = ` +${absolute_cents_offset}¢`;
+    } else if (absolute_cents_offset < 0) {
+      absolute_cents_str = ` ${absolute_cents_offset}¢`;
+    }
 
-    const semitones_from_tonic = Math.floor(step_mod_n / steps_per_semitone);
-    const sub_step = step_mod_n % steps_per_semitone;
-
-    const target_12step_index = (tonic_step_12 + semitones_from_tonic) % 12;
+    const target_12step_index = ((semitones_from_a % 12) + 12) % 12;
 
     const target_table = NOTE_TABLES[langIndex] || note_to_12step_en;
     const note_name = target_table[target_12step_index][0];
 
-    if (sub_step !== 0) {
-      formatted_text = `[${note_name} + <sup>${n_edo}</sup>${sub_step}'${cents_str}]`;
+    if (sub_step > 0) {
+      formatted_text = `[${note_name} + <sup>${n_edo}</sup>${sub_step}'${absolute_cents_str}]`;
     } else {
-      formatted_text = `[${note_name}${cents_str}]`;
+      formatted_text = `[${note_name}${absolute_cents_str}]`;
     }
 
   } else {

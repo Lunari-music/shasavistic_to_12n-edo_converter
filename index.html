@@ -19,14 +19,38 @@
                    title="有効な形式: 整数（1以上）">
             <span>平均律、</span>
 
-            <label for="base-pitch">基準音(=A):</label>
+
+            <label for="base-note">基準音:</label>
+            <input type="text" id="base-pitch-is" class="short-input" value="A"
+                   title="有効な形式: 音名（例: A, C#, Bb, Cis）">
+            <span>+</span>
+
+            <span class="sup-input-wrapper">
+                <span id="for-offset-n-edo" class="sup-label">48</span>
+                <input type="text" id="base-pitch-offset" class="short-input" value="0"
+                       inputmode="numeric" pattern="-?[0-9]*"
+                       title="有効な形式: 整数">
+            </span>
+            <span>'</span>
+            <label for="base-pitch">=</label>
             <input type="number" id="base-pitch" class="short-input" value="440.0" step="0.1"
                    title="有効な形式: 正の数（例: 440.0）">
-            <span>Hz、</span>
+            <span>Hz</span>
 
-            <label for="base-scale-tonic">主音:</label>
+        </div>
+        <div class="teto-input base-scale-row">
+            <label for="base-note">主音:</label>
             <input type="text" id="base-scale-tonic" class="short-input" value="A"
                    title="有効な形式: 音名（例: A, C#, Bb, Cis）">
+            <span>+</span>
+
+            <span class="sup-input-wrapper">
+                <span id="for-offset-n-edo" class="sup-label">48</span>
+                <input type="text" id="base-note-tonic-offset" class="short-input" value="0"
+                       inputmode="numeric" pattern="-?[0-9]*"
+                       title="有効な形式: 整数">
+            </span>
+            <span>'</span>
             <span id="base-scale-tonic-pitch">(=440.00Hz)</span>
 
             <span>（主音を1次元上昇・下降→）</span>
@@ -34,6 +58,7 @@
             <button type="button" id="base-1d-up">↑</button>
             <button type="button" id="base-1d-down">↓</button>
         </div>
+
 
         <div class="base-note-input base-scale-row">
             <label for="base-note">根音:</label>
@@ -47,7 +72,7 @@
                        inputmode="numeric" pattern="-?[0-9]*"
                        title="有効な形式: 整数">
             </span>
-            <span>'（ステップ）</span>
+            <span>'</span>
 
             <div class="option-input-row">
                 <input type="checkbox" id="show-note-with-step" checked>
@@ -71,7 +96,7 @@
         <summary>使い方(ここをクリック)</summary>
         <div class="help-content">
             <ul>
-                <li><b>基本設定:</b> 基準となる平均律（EDO）と主音（Tonic）、根音を設定します。</li>
+                <li><b>基本設定:</b> 基準となる平均律（EDO）と主音（Tonic）、根音を設定します。「'」は、ステップ数を表しています。</li>
                 <li>音名の表記方法は「日本語」「英語」「ドイツ語」に対応しています。同一表記のものは、選択した表記方法に従って表示されます。（Bなど）</li>
                 <li><b>音程の入力:</b> 各次元の「↑」「↓」を押すと、次元に応じた純正比（3/2, 5/4…）が掛け合わされます。</li>
                 <li> 「音名+ステップ数で表示」をONにしている場合、音名とステップ数の組み合わせで音程が表示されます。（12*n　平均律のみ）</li>
